@@ -342,10 +342,13 @@ average selling price for each product.
 average_price should be
 rounded to 2 decimal places.
 Return the result table in any order..**/
-select * from Q23_Prices;
-select * from Q23_UnitsSold;
-
-select * from Q23_UnitsSold t1 join Q23_Prices t2 on t1.product_id = t2.product_id;
+select t.product_id, round(sum(t.price_total)/sum(t.units), 2) as average_price 
+from 
+(select t1.product_id, t1.units, t1.units*t2.price as price_total 
+from Q23_UnitsSold t1 
+join Q23_Prices t2 on t1.product_id = t2.product_id 
+and t1.purchase_date between t2.start_date and t2.end_date) t
+group by product_id;
 
 create table if not exists Q23_Prices
 (
@@ -377,21 +380,127 @@ values
 (2, '2019-02-10', 200),
 (2, '2019-03-22', 30);
 
+-- Q24: 
+/**Write an SQL query to report the 
+first login date for each player.
+Return the result table in any order.**/
+select player_id, min(event_date) as first_login 
+from Q24_Activity 
+group by player_id;
+
+create table if not exists Q24_Activity
+(
+	player_id int,
+    device_id int,
+    event_date date,
+    games_played int,
+    primary key (player_id, event_date)
+);
+
+insert into Q24_Activity (player_id, device_id, event_date, games_played) 
+values
+(1, 2, '2016-03-01', 5),
+(1, 2, '2016-05-02', 6),
+(2, 3, '2017-06-25', 1),
+(3, 1, '2016-03-02', 0),
+(3, 4, '2018-07-03', 5);
+
+-- Q25: 
+/**Write an SQL query to report the 
+device that is first logged in for each player.
+Return the result table in any order**/
+select t1.player_id, t1.device_id
+from Q24_Activity t1
+join
+(select player_id, min(event_date) as first_login 
+from Q24_Activity 
+group by player_id) t2
+on t1.player_id = t2.player_id
+and t1.event_date = t2.first_login;
+
+-- Q26: 
+/**Write an SQL query to get the names 
+of products that have at least 100 units 
+ordered in February 2020 and their amount.
+Return result table in any order.**/
+select t1.product_name, t2.unit
+from Q26_Products t1
+join
+(select product_id, sum(unit) as unit
+from Q26_Orders 
+where year(order_date) = 2020 and month(order_date) = 2 
+group by product_id having unit>=100) t2
+on t1.product_id = t2.product_id;
+
+create table if not exists Q26_Products
+(
+	product_id int primary key,
+    product_name varchar(30),
+    product_category varchar(10)
+);
+
+create table if not exists Q26_Orders
+(
+	product_id int,
+    order_date date,
+    unit int,
+    foreign key(product_id) references Q26_Products(product_id)
+);
+
+insert into Q26_Products (product_id, product_name, product_category) 
+values
+(1, 'Leetcode Solutions', 'Book'),
+(2, 'Jewels of Stringology', 'Book'),
+(3, 'HP', 'Laptop'),
+(4, 'Lenovo', 'Laptop'),
+(5, 'Leetcode Kit', 'T-shirt');
+
+insert into Q26_Orders (product_id, order_date, unit) 
+values
+(1, '2020-02-05', 60),
+(1, '2020-02-10', 70),
+(2, '2020-01-18', 30),
+(2, '2020-02-11', 80),
+(3, '2020-02-17', 2),
+(3, '2020-02-24', 3),
+(4, '2020-03-01', 20),
+(4, '2020-03-04', 30),
+(4, '2020-03-04', 60),
+(5, '2020-02-25', 50),
+(5, '2020-02-27', 50),
+(5, '2020-03-01', 50);
+
+-- Q27: 
+/**Write an SQL query to find the users 
+who have valid emails. A valid e-mail has 
+a prefix name and a domain where:
+● The prefix name is a string that may 
+contain letters (upper or lower case), digits, 
+underscore '_', period '.', and/or dash '-'. 
+The prefix name must start with a letter.
+● The domain is '@leetcode.com'.
+Return the result table in any order.**/
+select *
+from Q27_Users
+where mail regexp '^[a-zA-Z][a-zA-Z0-9_.-]*@leetcode\\.com$';
 
 
+create table if not exists Q27_Users
+(
+	user_id int primary key,
+    name varchar(20),
+    mail varchar(30)
+);
 
-
-
-
-
-
-
-
-
-
-
-
-
+insert into Q27_Users (user_id, name, mail) 
+values
+(1, 'Winston', 'winston@leetcode.com'),
+(2, 'Jonathan', 'jonathanisgreat'),
+(3, 'Annabelle', 'bella-@leetcode.com'),
+(4, 'Sally', 'sally.come@leetcode.com'),
+(5, 'Marwan', 'quarz#2020@leetcode.com'),
+(6, 'David', 'david69@gmail.com'),
+(7, 'Shapiro', '.shapo@leetcode.com');
 
 
 
