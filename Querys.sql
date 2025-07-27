@@ -502,44 +502,470 @@ values
 (6, 'David', 'david69@gmail.com'),
 (7, 'Shapiro', '.shapo@leetcode.com');
 
+-- Q28: 
+/**Write an SQL query to report the 
+customer_id and customer_name of 
+customers who have spent at least 
+$100 in each month of June and July 2020.
+Return the result table in any order.**/
+select t3.customer_id, t3.name
+from Q28_Customers t3
+join
+(select t2.customer_id, month(t2.order_date) as mes, sum(t1.price * t2.quantity) as total_price
+from Q28_Product t1
+join 
+(select *
+from Q28_Orders 
+where order_date between '2020-06-01' and '2020-07-31') t2
+on t1.product_id = t2.product_id
+group by t2.customer_id, month(t2.order_date)
+having total_price>=100) t4
+on t3.customer_id = t4.customer_id
+group by t3.customer_id, t3.name
+having count(distinct t4.mes)=2;
 
+create table if not exists Q28_Customers
+(
+	customer_id int primary key,
+    name varchar(15),
+    country varchar(15)
+);
 
+create table if not exists Q28_Product
+(
+	product_id int primary key,
+    description varchar(20),
+    price int
+);
 
+create table if not exists Q28_Orders
+(
+	order_id int primary key,
+    customer_id int,
+    product_id int,
+    order_date date,
+    quantity int
+);
 
+insert into Q28_Customers (customer_id, name, country)
+values
+(1, 'Winston', 'USA'),
+(2, 'Jonathan', 'Peru'),
+(3, 'Moustafa', 'Egypt');
 
+insert into Q28_Product (product_id, description, price)
+values
+(10, 'LC Phone', 300),
+(20, 'LC T-Shirt', 10),
+(30, 'LC Book', 45),
+(40, 'LC Keychain', 2);
 
+insert into Q28_Orders (order_id, customer_id, product_id, order_date, quantity)
+values
+(1, 1, 10, '2020-06-10', 1),
+(2, 1, 20, '2020-07-01', 1),
+(3, 1, 30, '2020-07-08', 2),
+(4, 2, 10, '2020-06-15', 2),
+(5, 2, 40, '2020-07-01', 10),
+(6, 3, 20, '2020-06-24', 2),
+(7, 3, 30, '2020-06-25', 2),
+(9, 3, 30, '2020-05-08', 3);
 
+-- Q29: 
+/**Write an SQL query to report the 
+distinct titles of the kid-friendly 
+movies streamed in June 2020.
+Return the result table in any order.**/
+select t2.title
+from
+(select content_id 
+from Q29_TVProgram 
+where month(program_date) = 6 and year(program_date) = 2020) t1
+join
+(select content_id, title 
+from Q29_Content 
+where Kids_content = 'Y') t2
+on t1.content_id = t2.content_id;
 
+create table if not exists Q29_TVProgram
+(
+	program_date datetime,
+    content_id int,
+    channel varchar(20),
+    primary key (program_date, content_id)
+);
 
+create table if not exists Q29_Content
+(
+	content_id int primary key,
+    title varchar(20),
+    Kids_content enum('Y', 'N'),
+    content_type varchar(10)
+);
 
+insert into Q29_TVProgram (program_date, content_id, channel)
+values
+('2020-06-10 08:00', 1, 'LC-Channel'),
+('2020-05-11 12:00', 2, 'LC-Channel'),
+('2020-05-12 12:00', 3, 'LC-Channel'),
+('2020-05-13 14:00', 4, 'Disney Ch'),
+('2020-06-18 14:00', 4, 'Disney Ch'),
+('2020-07-15 16:00', 5, 'Disney Ch');
 
+insert into Q29_Content (content_id, title, Kids_content, content_type)
+values
+(1, 'Leetcode Movie', 'N', 'Movies'),
+(2, 'Alg. for Kids', 'Y', 'Series'),
+(3, 'Database Sols', 'N', 'Series'),
+(4, 'Aladdin', 'Y', 'Movies'),
+(5, 'Cinderella', 'Y', 'Movies');
 
+-- Q30: 
+/**Write an SQL query to find the 
+npv of each query of the Queries table.
+Return the result table in any order**/
+select  t1.id, t1.year, coalesce(t2.npv, 0) as npv
+from Q30_Queries t1
+left join Q30_NPV t2
+on t1.id = t2.id and t1.year = t2.year;
 
+create table if not exists Q30_NPV
+(
+	id int,
+    year int,
+    npv int,
+    primary key (id, year)
+);
 
+create table if not exists Q30_Queries
+(
+	id int,
+    year int,
+    primary key (id, year)
+);
 
+insert into Q30_NPV (id, year, npv)
+values
+(1, 2018, 100),
+(7, 2020, 30),
+(13, 2019, 40),
+(1, 2019, 113),
+(2, 2008, 121),
+(3, 2009, 12),
+(11, 2020, 99),
+(7, 2019, 0);
 
+insert into Q30_Queries (id, year)
+values
+(1, 2019),
+(2, 2008),
+(3, 2009),
+(7, 2018),
+(7, 2019),
+(7, 2020),
+(13, 2019);
 
+-- Q31: 
+/**Write an SQL query to find the 
+npv of each query of the Queries table.
+Return the result table in any order.**/
+select  t1.id, t1.year, coalesce(t2.npv, 0) as npv
+from Q30_Queries t1
+left join Q30_NPV t2
+on t1.id = t2.id and t1.year = t2.year;
 
+-- Q32: 
+/**Write an SQL query to show the 
+unique ID of each user, If a user 
+does not have a unique ID replace just
+show null.
+Return the result table in any order.**/
+select coalesce(t2.unique_id, null) as unique_id, t1.name
+from Q32_Employees t1 
+left join Q32_EmployeeUNI t2
+on t1.id = t2.id;
 
+create table if not exists Q32_Employees
+(
+	id int primary key,
+    name varchar(15)
+);
 
+create table if not exists Q32_EmployeeUNI
+(
+	id int,
+    unique_id int,
+    primary key (id, unique_id)
+);
 
+insert into Q32_Employees (id, name) 
+values
+(1, 'Alice'),
+(7, 'Bob'),
+(11, 'Meir'),
+(90, 'Winston'),
+(3, 'Jonathan');
 
+insert into Q32_EmployeeUNI (id, unique_id) 
+values
+(3, 1),
+(11, 2),
+(90, 3);
 
+-- Q33: 
+/**Write an SQL query to report the 
+distance travelled by each user.
+Return the result table ordered by 
+travelled_distance in descending order, 
+if two or more users travelled the 
+same distance, order them by their 
+name in ascending order.**/
+select t1.name, coalesce(t2.travelled_distance, 0) as travelled_distance
+from Q33_Users t1
+left join
+(select user_id, sum(distance) as travelled_distance 
+from Q33_Rides 
+group by user_id) t2
+on t1.id = t2.user_id
+order by t2.travelled_distance desc, t1.name asc;
 
+create table if not exists Q33_Users
+(
+	id int primary key,
+    name varchar(15)
+);
 
+create table if not exists Q33_Rides
+(
+	id int primary key,
+    user_id int,
+    distance int
+);
 
+insert into Q33_Users (id, name) 
+values
+(1, 'Alice'),
+(2, 'Bob'),
+(3, 'Alex'),
+(4, 'Donald'),
+(7, 'Lee'),
+(13, 'Jonathan'),
+(19, 'Elvis');
 
+insert into Q33_Rides (id, user_id, distance) 
+values
+(1, 1, 120),
+(2, 2, 317),
+(3, 3, 222),
+(4, 7, 100),
+(5, 13, 312),
+(6, 19, 50),
+(7, 7, 120),
+(8, 19, 400),
+(9, 7, 230);
 
+-- Q34: 
+/**Write an SQL query to get the 
+names of products that have at 
+least 100 units ordered in February 
+2020 and their amount.
+Return result table in any order.**/
+select product_id, sum(unit) as total_units 
+from Q26_Orders 
+where year(order_date)=2020 and month(order_date)=2
+group by product_id
+having total_units >= 100;
 
+-- Q35: 
+/**Write an SQL query to:
+● Find the name of the user who has 
+rated the greatest number of movies. 
+In case of a tie,
+return the lexicographically smaller 
+user name.
+● Find the movie name with the highest 
+average rating in February 2020. In 
+case of a tie, return the 
+lexicographically smaller movie name.**/
+(SELECT t1.name as results
+FROM Q35_Users t1
+JOIN
+(select user_id, count(distinct movie_id) as total_movies
+from Q35_MovieRating 
+group by user_id) t2
+ON t1.user_id = t2.user_id
+WHERE t2.total_movies IN 
+(select max(t3.total_movies) 
+from 
+(select count(distinct movie_id) as total_movies
+from Q35_MovieRating 
+group by user_id) t3)
+ORDER BY results ASC
+LIMIT 1)
 
+union all
 
+(SELECT t1.title as results
+FROM Q35_Movies t1
+JOIN 
+(select movie_id, avg(rating) as average_rating
+from Q35_MovieRating
+where year(created_at) = 2020 and month(created_at) = 2 
+group by movie_id) t2
+ON t1.movie_id = t2.movie_id
+WHERE t2.average_rating IN 
+(select max(t2.average_rating) 
+from 
+(select avg(rating) as average_rating
+from Q35_MovieRating
+group by movie_id) t2)
+ORDER BY t1.title ASC
+LIMIT 1);
 
+create table if not exists Q35_Movies
+(
+	movie_id int primary key,
+    title varchar(15)
+);
 
+create table if not exists Q35_Users
+(
+	user_id int primary key,
+    name varchar(15)
+);
 
+create table if not exists Q35_MovieRating
+(
+	movie_id int,
+    user_id int,
+    rating int,
+    created_at date,
+    primary key (movie_id, user_id)
+);
 
+insert into Q35_Movies (movie_id, title) 
+values
+(1, 'Avengers'),
+(2, 'Frozen 2'),
+(3, 'Joker');
 
+insert into Q35_Users (user_id, name) 
+values
+(1, 'Daniel'),
+(2, 'Monica'),
+(3, 'Maria'),
+(4, 'James');
 
+insert into Q35_MovieRating (movie_id, user_id, rating, created_at) 
+values
+(1, 1, 3, '2020-01-12'),
+(1, 2, 4, '2020-02-11'),
+(1, 3, 2, '2020-02-12'),
+(1, 4, 1, '2020-01-01'),
+(2, 1, 5, '2020-02-17'),
+(2, 2, 2, '2020-02-01'),
+(2, 3, 2, '2020-03-01'),
+(3, 1, 3, '2020-02-22'),
+(3, 2, 4, '2020-02-25');
 
+-- Q36: 
+/**Write an SQL query to report 
+the distance travelled by each user.
+Return the result table ordered 
+by travelled_distance in descending 
+order, if two or more users
+travelled the same distance, order 
+them by their name in ascending order.**/
+select t1.name, coalesce(t2.travelled_distance, 0) as travelled_distance
+from Q33_Users t1 
+left join
+(select user_id, sum(distance) as travelled_distance 
+from Q33_Rides
+group by user_id) t2
+on t1.id = t2.user_id
+order by travelled_distance desc, t1.name asc;
+
+-- Q37: 
+/**Write an SQL query to show the 
+unique ID of each user, If a user 
+does not have a unique ID replace 
+just show null.
+Return the result table in any order.**/
+select t2.unique_id, t1.name
+from Q32_Employees t1
+left join Q32_EmployeeUNI t2
+on t1.id = t2.id;
+
+-- Q38: 
+/**Write an SQL query to find 
+the id and the name of all 
+students who are enrolled in 
+departments that no
+longer exist.
+Return the result table in any 
+order.**/
+select id, name 
+from Q38_Students 
+where department_id not in 
+(select id from Q38_Departments); 
+
+create table if not exists Q38_Departments
+(
+	id int primary key,
+    name varchar(30)
+);
+
+create table if not exists Q38_Students
+(
+	id int primary key,
+    name varchar(15),
+    department_id int 
+);
+
+insert into Q38_Departments (id, name) 
+values
+(1, 'Electrical Engineering'),
+(7, 'Computer Engineering'),
+(13, 'Business Administration');
+
+insert into Q38_Students (id, name, department_id) 
+values
+(23, 'Alice', 1),
+(1, 'Bob', 7),
+(5, 'Jennifer', 13),
+(2, 'John', 14),
+(4, 'Jasmine', 77),
+(3, 'Steve', 74),
+(6, 'Luis', 1),
+(8, 'Jonathan', 7),
+(7, 'Daiana', 33),
+(11, 'Madelynn', 1);
+
+-- Q39: 
+/**Write an SQL query to report 
+the number of calls and the total 
+call duration between each pair 
+of distinct persons (person1, person2) 
+where person1 < person2.
+Return the result table in any order**/
+select * from Q39_Calls;
+
+create table if not exists Q39_Calls
+(
+	from_id int,
+    to_id int,
+    duration int 
+);
+
+insert into Q39_Calls (from_id, to_id, duration) 
+values
+(1, 2, 59),
+(2, 1, 11),
+(1, 3, 20),
+(3, 4, 100),
+(3, 4, 200),
+(3, 4, 200),
+(4, 3, 499);
 
 
 
