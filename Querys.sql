@@ -948,7 +948,16 @@ call duration between each pair
 of distinct persons (person1, person2) 
 where person1 < person2.
 Return the result table in any order**/
-select * from Q39_Calls;
+select 
+least(from_id, to_id) as person1, 
+greatest(from_id, to_id) as person2,
+count(*) as call_count,
+sum(duration) as total_duration
+from Q39_Calls
+group by 
+least(from_id, to_id),
+greatest(from_id, to_id)
+having person1<> person2; 
 
 create table if not exists Q39_Calls
 (
@@ -966,6 +975,247 @@ values
 (3, 4, 200),
 (3, 4, 200),
 (4, 3, 499);
+
+-- Q40: 
+/**Write an SQL query to find the 
+average selling price for each 
+product. average_price should be
+rounded to 2 decimal places.
+Return the result table in any order.**/
+select t2.product_id, sum(t1.units*t2.price) * 1 / sum(t1.units) as average_price 
+from Q23_UnitsSold t1
+join Q23_Prices t2
+on t1.product_id = t2.product_id
+and t1.purchase_date between t2.start_date and end_date
+group by t2.product_id;
+
+-- Q41: 
+/**Write an SQL query to report the 
+number of cubic feet of volume the 
+inventory occupies in each warehouse.
+Return the result table in any order.**/
+select t1.name as warehouse_name, sum(t1.units* t2.Width * t2.Length * t2.Height) as volume
+from Q41_Warehouse t1
+join Q41_Products t2
+on t1.product_id = t2.product_id
+group by t1.name;
+
+create table if not exists Q41_Warehouse
+(
+	name varchar(15),
+    product_id int,
+    units int,
+    primary key(name, product_id)
+);
+
+create table if not exists Q41_Products
+(
+    product_id int primary key,
+    product_name varchar(15),
+    Width int,
+    Length int,
+    Height int
+);
+
+insert into Q41_Warehouse (name, product_id, units) 
+values
+('LCHouse1', 1, 1),
+('LCHouse1', 2, 10),
+('LCHouse1', 3, 5),
+('LCHouse2', 1, 2),
+('LCHouse2', 2, 2),
+('LCHouse3', 4, 1);
+
+insert into Q41_Products (product_id, product_name, Width, Length, Height) 
+values
+(1, 'LC-TV', 5, 50, 40),
+(2, 'LC-KeyChain', 5, 5, 5),
+(3, 'LC-Phone', 2, 10, 10),
+(4, 'LC-T-Shirt', 4, 10, 20);
+
+-- Q42: 
+/**Write an SQL query to report the 
+difference between the number of 
+apples and oranges sold each day.
+Return the result table ordered by 
+sale_date.**/
+select sale_date, 
+sum(case when fruit = "apples" then sold_num end) 
+					    - 
+sum(case when fruit = "oranges" then sold_num end) as diff
+from Q42_Sales
+group by sale_date;
+
+create table if not exists Q42_Sales
+(
+    sale_date date,
+    fruit enum("apples", "oranges"),
+    sold_num int,
+    primary key(sale_date, fruit)
+);
+
+insert into Q42_Sales (sale_date, fruit, sold_num) 
+values
+('2020-05-01', 'apples', 10),
+('2020-05-01', 'oranges', 8),
+('2020-05-02', 'apples', 15),
+('2020-05-02', 'oranges', 15),
+('2020-05-03', 'apples', 20),
+('2020-05-03', 'oranges', 0),
+('2020-05-04', 'apples', 15),
+('2020-05-04', 'oranges', 16);
+
+-- Q43: 
+/**Write an SQL query to report the fraction 
+of players that logged in again on the day 
+after the day they first logged in, rounded 
+to 2 decimal places. In other words, you 
+need to count the number of players that 
+logged in for at least two consecutive days 
+starting from their first login date, then 
+divide that number by the total number of 
+players.**/
+SELECT round(a.a / b.b, 2) AS fraction
+FROM
+
+(select count(*) as a
+from Q24_Activity t1
+join
+(select player_id, min(event_date) as first_login
+from Q24_Activity
+group by player_id) t2
+on t1.player_id = t2.player_id
+where datediff(t1.event_date, t2.first_login) = 1) a,
+  
+(select count(distinct player_id) as b
+from Q24_Activity) b;
+
+-- Q44: 
+/**Write an SQL query to report the 
+managers with at least five direct reports.
+Return the result table in any order..**/
+select name
+from Q44_Employee t1
+join
+(select managerId, count(*) as total_reports
+from Q44_Employee
+group by managerId
+having total_reports >= 5) t2
+on t1.id = t2.managerId;
+
+create table if not exists Q44_Employee
+(
+    id int primary key,
+    name varchar(15),
+    department varchar(1),
+    managerId int
+);
+
+insert into Q44_Employee (id, name, department, managerId) 
+values
+(101, 'John', 'A', NULL),
+(102, 'Dan', 'A', 101),
+(103, 'James', 'A', 101),
+(104, 'Amy', 'A', 101),
+(105, 'Anne', 'A', 101),
+(106, 'Ron', 'B', 101);
+
+-- Q45: 
+/**Write an SQL query to report the 
+respective department name and number 
+of students majoring in each department 
+for all departments in the Department 
+table (even ones with no current students).
+Return the result table ordered by 
+student_number in descending order. 
+In case of a tie, order them by
+dept_name alphabetically.**/
+select * from Q45_Department;
+select t2.dept_name, coalesce(count(distinct t1.student_id), 0) as student_number
+from Q45_Student t1 
+right join Q45_Department t2
+on t1.dept_id = t2.dept_id
+group by t2.dept_name
+order by student_number desc, dept_name asc;
+
+create table if not exists Q45_Department
+(
+    dept_id int primary key,
+    dept_name varchar(15)
+);
+
+create table if not exists Q45_Student
+(
+    student_id int primary key,
+    student_name varchar(10),
+    gender varchar(1),
+    dept_id int,
+    foreign key(dept_id) references Q45_Department(dept_id)
+);
+
+insert into Q45_Department (dept_id, dept_name) 
+values
+(1, 'Engineering'),
+(2, 'Science'),
+(3, 'Law');
+
+insert into Q45_Student (student_id, student_name, gender, dept_id) 
+values
+(1, 'Jack', 'M', 1),
+(2, 'Jane', 'F', 1),
+(3, 'Mark', 'M', 2);
+
+-- Q46: 
+/**Write an SQL query to report the 
+customer ids from the Customer table 
+that bought all the products in the 
+Product table.
+Return the result table in any order.**/
+SELECT t3.customer_id
+FROM
+(select t1.customer_id, count(distinct t1.product_key) as total_keys
+from Q46_Customer t1
+join Q46_Product t2
+on t1.product_key = t2.product_key
+group by t1.customer_id
+having total_keys = (select count(distinct product_key) from Q46_Product)) t3;
+
+create table if not exists Q46_Product
+(
+    product_key int primary key
+);
+
+create table if not exists Q46_Customer
+(
+    customer_id int,
+    product_key int,
+    foreign key(product_key) references Q46_Product(product_key)
+);
+
+insert into Q46_Product (product_key) 
+values
+(5),
+(6);
+
+insert into Q46_Customer (customer_id, product_key) 
+values
+(1, 5),
+(2, 6),
+(3, 5),
+(3, 6),
+(1, 6);
+
+-- Q47: 
+/**Write an SQL query to report the 
+customer ids from the Customer table 
+that bought all the products in the 
+Product table.
+Return the result table in any order.**/
+
+
+
+
+
 
 
 
