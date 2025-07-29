@@ -1206,21 +1206,221 @@ values
 (1, 6);
 
 -- Q47: 
-/**Write an SQL query to report the 
-customer ids from the Customer table 
-that bought all the products in the 
-Product table.
+/**Write an SQL query that reports 
+the most experienced employees in 
+each project. In case of a tie,
+report all employees with the maximum 
+number of experience years.
 Return the result table in any order.**/
+SELECT t3.project_id, t3.employee_id
+FROM
+(select t1.project_id, t1.employee_id, t2.experience_years
+from Q47_Project t1 
+join Q47_Employee t2
+on t1.employee_id = t2.employee_id) t3
+JOIN
+(select t1.project_id, max(t2.experience_years) as t
+from Q47_Project t1 
+join Q47_Employee t2
+on t1.employee_id = t2.employee_id
+group by t1.project_id) t4
+ON
+t3.project_id = t4.project_id
+and t3.experience_years = t4.t;
 
+create table if not exists Q47_Employee
+(
+    employee_id int primary key,
+    name varchar(10),
+    experience_years int
+);
 
+create table if not exists Q47_Project
+(
+    project_id int,
+    employee_id int,
+    primary key(project_id, employee_id),
+    foreign key(employee_id) references Q47_Employee(employee_id)
+);
 
+insert into Q47_Employee (employee_id, name, experience_years)
+values
+(1, 'Khaled', 3),
+(2, 'Ali', 2),
+(3, 'John', 3),
+(4, 'Doe', 2);
 
+insert into Q47_Project (project_id, employee_id)
+values
+(1, 1),
+(1, 2),
+(1, 3),
+(2, 1),
+(2, 4);
 
+-- Q48: 
+/**Write an SQL query that reports 
+the books that have sold less than 
+10 copies in the last year, excluding 
+books that have been available for 
+less than one month from today. 
+Assume today is 2019-06-23.
+Return the result table in any order.**/
+select t2.name, sum(t1.quantity) as total
+from Q48_Orders t1
+join Q48_Books t2
+on t1.book_id = t2.book_id
+where t1.dispatch_date between '2018-06-23' and '2019-06-23'
+and t2.available_from < '2019-05-23'
+group by t2.name
+having total < 10;
 
+create table if not exists Q48_Books
+(
+    book_id int primary key,
+    name varchar(25),
+    available_from date
+);
 
+create table if not exists Q48_Orders
+(
+    order_id int primary key,
+    book_id int,
+    quantity int,
+    dispatch_date date,
+    foreign key(book_id) references Q48_Books(book_id)
+);
 
+insert into Q48_Books (book_id, name, available_from)
+values
+(1, 'Kalila And Demna', '2010-01-01'),
+(2, '28 Letters', '2012-05-12'),
+(3, 'The Hobbit', '2019-06-10'),
+(4, '13 Reasons Why', '2019-06-01'),
+(5, 'The Hunger Games', '2008-09-21');
 
+insert into Q48_Orders (order_id, book_id, quantity, dispatch_date)
+values
+(1, 1, 3, '2024-01-15'),
+(2, 2, 1, '2024-01-20'),
+(3, 3, 2, '2024-02-05'),
+(4, 4, 5, '2024-02-10'),
+(5, 5, 4, '2024-02-18'),
+(6, 1, 2, '2024-03-01'),
+(7, 2, 6, '2024-03-03'),
+(8, 3, 1, '2024-03-07'),
+(9, 4, 2, '2024-03-12'),
+(10, 5, 3, '2024-03-15'),
+(11, 1, 2, '2018-07-05'),
+(12, 2, 1, '2018-08-12'),
+(13, 3, 3, '2018-09-23'),
+(14, 4, 2, '2018-11-01'),
+(15, 5, 1, '2019-01-15'),
+(16, 1, 1, '2019-03-22'),
+(17, 2, 2, '2019-04-10'),
+(18, 3, 1, '2019-05-09'),
+(19, 4, 4, '2019-06-01'),
+(20, 5, 3, '2019-06-20'),
+(21, 1, 1, '2019-04-01'), 
+(22, 2, 2, '2019-06-15'), 
+(23, 3, 3, '2019-06-22'), 
+(24, 1, 3, '2018-01-01'),
+(25, 4, 5, '2019-06-10'),  
+(26, 5, 2, '2019-06-23'); 
 
+-- Q49: 
+/**Write a SQL query to find the 
+highest grade with its corresponding 
+course for each student. In case of
+a tie, you should find the course 
+with the smallest course_id.
+Return the result table ordered by 
+student_id in ascending order.**/
+SELECT student_id, course_id, grade
+FROM 
+(select *, 
+row_number() over (partition by student_id order by grade desc, course_id asc) as rn
+from Q49_Enrollments) as t1
+WHERE rn = 1;
 
+create table if not exists Q49_Enrollments
+(
+    student_id int,
+    course_id int,
+    grade int,
+    primary key(student_id, course_id)
+);
 
+insert into Q49_Enrollments (student_id, course_id, grade)
+values
+(2, 2, 95),
+(2, 3, 95),
+(1, 1, 90),
+(1, 2, 99),
+(3, 1, 80),
+(3, 2, 75),
+(3, 3, 82);
 
+-- Q50: 
+/**The winner in each group is the 
+player who scored the maximum total 
+points within the group. In the case 
+of a tie, the lowest player_id wins.
+Write an SQL query to find the winner 
+in each group.
+Return the result table in any order.**/
+SELECT final.group_id, final.player_id
+FROM
+(select 
+	t3.group_id, 
+	t3.player_id,
+	row_number() over (partition by t3.group_id order by t3.total desc, t3.player_id asc) as rn
+from
+(select t1.group_id, t1.player_id, t2.total 
+from Q50_Players t1
+join
+(select player_id, sum(score) as total
+from
+(select first_player as player_id, first_score as score 
+from Q50_Matches
+union all
+select second_player as player_id, second_score as score 
+from Q50_Matches) as combined_scores
+group by player_id) t2
+on t1.player_id = t2.player_id) as t3) as final
+where rn = 1;
+
+create table if not exists Q50_Players
+(
+    player_id int,
+    group_id int
+);
+
+create table if not exists Q50_Matches
+(
+    match_id int primary key,
+    first_player int,
+    second_player int,
+    first_score int,
+    second_score int
+);
+
+insert into Q50_Players (player_id, group_id)
+values 
+(15, 1),
+(25, 1),
+(30, 1),
+(45, 1),
+(10, 2),
+(35, 2),
+(50, 2),
+(20, 3),
+(40, 3);
+
+insert into Q50_Matches (match_id, first_player, second_player, first_score, second_score)
+values 
+(1, 15, 45, 3, 0),
+(2, 30, 25, 1, 2),
+(3, 30, 15, 2, 0),
+(4, 40, 20, 5, 2),
+(5, 35, 50, 1, 1);
